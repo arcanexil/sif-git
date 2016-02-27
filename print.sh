@@ -1,6 +1,30 @@
 #!/bin/bash
-# print.sh - User Friendly's menu to print in UPSUD's SIF
+# imprimer.sh - User Friendly's menu to print in UPSUD's SIF
 # Author : Lucas Ranc <lucas.ranc@gmail.com>
+
+# Moon :
+# 
+# 1. Vérifier le quota de l'utilisateur lui afficher, afficher également son login
+#    et éventuellement l'éspace occupé
+# 2. Afficher l'état de l'imprimante (file d'impression, prête, hors ligne ...)
+#    prévenir l'utilsateur si une autre impression bloque, qu'il ne sert à rien
+#    d'imprimer sous peine de perdre son quota de pages
+#    Si imprimante OK continuer procédure...
+# 3.  
+#
+# Spécifier si le script prend un paramettre ($1) et à quoi il correspond
+# La recherche sur les pdf se base sur l'extention pdf, mais peut être améliorée
+# J'ai vérifié mais la recherche ne parcours pas tout les rep !
+# Pour impression on doit gérer la sortie (affichage du quota et décompte apres
+# impression...
+# un module de parcours des rep serait bien...
+# L'avertissement avant impression est placée après l'impression (à inverser) 
+# 
+# Renvoi PDF si c'en est un
+# file fichier | cut -d ":" -f2 | cut -c2-4
+# Renvoi PostScript si c'en est un
+# file fichier | cut -d ":" -f2 | cut -c2-11
+
 
 ### Def some global vars
 TITLE="Imprimer au SIF"
@@ -30,8 +54,7 @@ function PdfCheck(){
   ### Result into $filepath
   ###
   if [ -z $1 ]; then
-    # filepath=$(ls -lhpR $HOME/*.pdf  | awk -F ' ' ' { print $9 " " $5 } ')
-    filepath=$(find ~/Documents/ -name \*.pdf)
+    filepath=$(ls -lhpR $HOME/*.pdf  | awk -F ' ' ' { print $9 " " $5 } ')
   else
     filepath=$(ls -lhpR $1/*.pdf  | awk -F ' ' ' { print $9 " " $5 } ')
   fi
@@ -51,7 +74,7 @@ function Print(){
     if [[ "$CopyNumber" =~ ^[0-9]+$ ]]; then
       ### Here, every params is ok to send print command :
       # Doing echo for testings
-      echo "lpr $1 -#$CopyNumber $pathselect"
+      echo "lpr $1 -#$CopyNumber $pathselect" > /home/lino/impression.txt
       ### After confirmation of lpr script, confirmation message :
       printed=$(basename $pathselect)
       whiptail --title "$TITLE"\
@@ -107,9 +130,6 @@ function Procedure(){
 
   ### Now we check the result path :
   status=$?
-  # Check if spaces :
-  # pathselect=$(echo $pathselect | sed -e 's/ /_/g')
-  echo $pathselect | sed -e 's/ /_/g'
   if [ $status -eq 0 ]; then
     AskOptions
   else
@@ -136,22 +156,23 @@ function Convert(){
   ### Now we check the result path :
   status=$?
   if [ $status -eq 0 ]; then
-    # pdftops $pathselect &
-    echo $pathselect
+    	# moon
+	echo "pdftops $pathselect &"
+	pdftops $pathselect &
     {
-      echo 10
-      while (true)
-      do
+        echo 10
         sleep 1
-        echo 50
-        if [ "$(ps aux | grep -v grep | grep -e "pdftops")" == "" ]; then
-          break
-        fi
-      done
-      # If it is done then display 100%
-      echo 100
-      # Give it some time to display the progress to the user.
-      sleep 1
+        while (true)
+        do
+            echo 50
+            if [ "$(ps aux | grep -v grep | grep -e "pdftops")" == "" ]; then
+              break
+            fi
+        done
+        # If it is done then display 100%
+        echo 100
+        # Give it some time to display the progress to the user.
+        sleep 1
 } | whiptail --title "$TITLE" --gauge "Conversion en cours ..." 0 0 0
   fi
 }
@@ -160,9 +181,9 @@ function Welcome(){
   ### Welcome :
   whiptail --title "$TITLE"\
   --msgbox "Bienvenue sur le module d'impression du SIF.\n\n\
-  Pour cela, il vous faut donc avoir déposer dans\n\
+  Pour cela, il vous faut donc avoir déposé dans\n\
   votre dossier personnel le fichier à imprimer.\n\
-  (Procédure expliquée sur ... )\n\n\
+  (Procédure expliquée sur le dossier /partage/procédure... )\n\n\
   Attention : votre fichier ne doit pas contenir d'espaces" 0 0
 }
 
