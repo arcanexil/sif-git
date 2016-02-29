@@ -1,16 +1,16 @@
 #!/bin/bash
-# imprimer.sh - User Friendly's menu to print in UPSUD's SIF
+# print.sh - User Friendly's menu to print in UPSUD's SIF
 # Author : Lucas Ranc <lucas.ranc@gmail.com>
 
 # Moon :
-# 
+#
 # 1. Vérifier le quota de l'utilisateur lui afficher, afficher également son login
-#    et éventuellement l'éspace occupé
+#    et éventuellement l'espace occupé
 # 2. Afficher l'état de l'imprimante (file d'impression, prête, hors ligne ...)
 #    prévenir l'utilsateur si une autre impression bloque, qu'il ne sert à rien
 #    d'imprimer sous peine de perdre son quota de pages
 #    Si imprimante OK continuer procédure...
-# 3.  
+# 3.
 #
 # Spécifier si le script prend un paramettre ($1) et à quoi il correspond
 # La recherche sur les pdf se base sur l'extention pdf, mais peut être améliorée
@@ -18,8 +18,8 @@
 # Pour impression on doit gérer la sortie (affichage du quota et décompte apres
 # impression...
 # un module de parcours des rep serait bien...
-# L'avertissement avant impression est placée après l'impression (à inverser) 
-# 
+# L'avertissement avant impression est placée après l'impression (à inverser)
+#
 # Renvoi PDF si c'en est un
 # file fichier | cut -d ":" -f2 | cut -c2-4
 # Renvoi PostScript si c'en est un
@@ -28,6 +28,9 @@
 
 ### Def some global vars
 TITLE="Imprimer au SIF"
+LOGIN=$(whoami)
+# prends trop de temps chez moi
+# ESPACE=$(du -sh)
 
 
 function PsCheck(){
@@ -117,25 +120,29 @@ function Procedure(){
   ###
   ### Launch precedure to print : find files, ask options, print
   ###
-  PsCheck
+  CheckLPQ=$(lpq | wl -c)
+  if [ CheckLPQ -eq 0 ]; then
+    #statements
+    PsCheck
 
-  ### Ask which file to use
-  if [ -z $1 ]; then
-    pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
-    --cancel-button Retour --ok-button Select $filepath 3>&1 1>&2 2>&3)
-  else
-    pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
-    --cancel-button Retour --ok-button Selectionner $filepath 3>&1 1>&2 2>&3)
-  fi
+    ### Ask which file to use
+    if [ -z $1 ]; then
+      pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
+      --cancel-button Retour --ok-button Select $filepath 3>&1 1>&2 2>&3)
+    else
+      pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
+      --cancel-button Retour --ok-button Selectionner $filepath 3>&1 1>&2 2>&3)
+    fi
 
-  ### Now we check the result path :
-  status=$?
-  if [ $status -eq 0 ]; then
-    AskOptions
-  else
-    whiptail --title "$TITLE"\
-    --msgbox "Attention : \n Vous n'avez pas de fichiers .PS dans votre\
-répertoire personnel.\n Veuillez vérifier ou adressez-vous à un tuteur." 0 0
+    ### Now we check the result path :
+    status=$?
+    if [ $status -eq 0 ]; then
+      AskOptions
+    else
+      whiptail --title "$TITLE"\
+      --msgbox "Attention : \n Vous n'avez pas de fichiers .PS dans votre\
+      répertoire personnel.\n Veuillez vérifier ou adressez-vous à un tuteur." 0 0
+    fi
   fi
 }
 
@@ -180,7 +187,7 @@ function Convert(){
 function Welcome(){
   ### Welcome :
   whiptail --title "$TITLE"\
-  --msgbox "Bienvenue sur le module d'impression du SIF.\n\n\
+  --msgbox "Bienvenue $LOGIN sur le module d'impression du SIF.\n\n\
   Pour cela, il vous faut donc avoir déposé dans\n\
   votre dossier personnel le fichier à imprimer.\n\
   (Procédure expliquée sur le dossier /partage/procédure... )\n\n\
