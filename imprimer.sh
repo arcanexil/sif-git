@@ -313,7 +313,7 @@ function menu(){
 	#kill -HUP `pgrep -s 0 -o`
 	# logout        
 	clear
-        exit 
+        exit 0
         ### Or logout	
         ;;	
     esac
