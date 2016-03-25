@@ -14,13 +14,16 @@
 
 # Copie du fichier à imprimer au bon format : 
 # Le script prend mal en compte les noms de fichiers avec des espaces et autres 
-# caractères spéciaux
+# caractères spéciaux (d'ailleurs le script lpr ne les gère pas !)
 # il convient donc lors de la conversion de spécifier un nom different de celui donné en argument
 # et donc un nom court
 #############################################################################
 #
 # 1. Vérifier le quota de l'utilisateur lui afficher, afficher également l'éspace disque occupé
+#    car si les quotas ne suivent pas probleme il y aura...
 # 2. Afficher l'état de l'imprimante (file d'impression, prête, hors ligne ...)
+# Si tu lis ces lignes Lucas, peut on creer un fichier avec les fonctionnalitées à ajouter etc.. ?
+# ainsi on poura deplacer ce contenu
 #    Que faire si incident imprimante ?
 #    Dejà dans le welcome : prévenir l'utilsateur si une autre impression bloque, qu'il ne sert à rien
 #    d'imprimer sous peine de perdre son quota de pages
