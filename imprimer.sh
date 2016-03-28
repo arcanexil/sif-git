@@ -6,14 +6,14 @@
 # A faire :
 # 1. Gérer les nom de fichiers avec des espaces, il y en a...
 #    En fait le while recupere bien le fichier avec espaces c'est whiptail qui le recupere emal !
-# 
+#
 # 2. Trouver un solution pour la conversion des fichiers pdf > à 2 Mo car c'est lent
 #    On peut envisager si le PDF est gros, dans un premier temps de proposer à l'utilisateur la première methode :-(
 #    Pas genial mais bon ... Et donc de remettre la fonction PsCheck que j'avais supprimé
 
 
-# Copie du fichier à imprimer au bon format : 
-# Le script prend mal en compte les noms de fichiers avec des espaces et autres 
+# Copie du fichier à imprimer au bon format :
+# Le script prend mal en compte les noms de fichiers avec des espaces et autres
 # caractères spéciaux (d'ailleurs le script lpr ne les gère pas !)
 # il convient donc lors de la conversion de spécifier un nom different de celui donné en argument
 # et donc un nom court
@@ -41,7 +41,7 @@
 # C'est rare mais il peut exister des pdf sans extension ! la recherche ne le detecte pas!
 # Pour l'impression on doit gérer la sortie (affichage du quota et décompte apres
 # impression...
-# 
+#
 # Renvoi PDF
 # file fichier | cut -d ":" -f2 | cut -c2-4
 
@@ -53,7 +53,7 @@ QUOTA_DISQUE=`du -sh ~ | cut -f1`
 
 function Quota(){
 ### Print quota user :
-# Replace with quota $USER 
+# Replace with quota $USER
   whiptail --title "$TITLE"\
   --msgbox "Vous coccupez actuellement : $QUOTA_DISQUE .\n\
     Votre quota impresion est de : $QUOTA\n\n\
@@ -62,11 +62,11 @@ function Quota(){
     Vous informant de votre nouveau crédit\n\n\
     Attention vous avez droit à un seul renouvellement de 100 " 0 0
 }
-  
+
 function etat_imprimante(){
   ###
   ### Check for printer status
-  ### 
+  ###
   ### If ready then continue, else show files queu
   # Moon
   LPQ=$(lpq)
@@ -80,13 +80,14 @@ function PdfCheck(){
   ### Take an arg to change the folder
   ### Result into $filepath
   ###
-  
-  # moon chez moi car c'est $9 au lieu de $8 
+
+  # moon chez moi car c'est $9 au lieu de $8
     pcmoon=`uname -a | cut -d " " -f3`
     if [ "$pcmoon" == "3.13.0-83-generic" ]; then
             filepath=$(find $HOME \( ! -regex '.*/\..*' \) -type f -name "*.pdf" | while read i;do ls -lhp "$i" | awk -F ' ' ' { print $9 " " $5 } '; done)
     else
-    filepath=$(find $HOME \( ! -regex '.*/\..*' \) -type f -name "*.pdf" | while read i;do ls -lhp "$i" | awk -F ' ' ' { print $8 " " $5 } '; done)
+    # filepath=$(find $HOME \( ! -regex '.*/\..*' \) -type f -name "*.pdf" | while read i;do ls -lhp "$i" | awk -F ' ' ' { print $8 " " $5 } '; done)
+    filepath=$(find Documents \( ! -regex '.*/\..*/' \) -type f -name "*.pdf" | while read i;do new=$(ls "$i" | sed 's/ /_/'); if [ "$i" != "$new" ]; then mv "$i" $new; fi; ls -lhp "$new" | awk -F ' ' ' { print $8 " " $5 } '; done)
     fi
 }
 
@@ -114,7 +115,7 @@ function suppr_file_impression(){
                			whiptail --msgbox "Tous vos jobs ont été annulés" 0 0
             		else
                			whiptail --msgbox "Le job $numero_job a bien été annulé" 0 0
-            		fi      
+            		fi
           	else
             		whiptail --msgbox "$status" 0 0
           	fi
@@ -127,8 +128,8 @@ function suppr_file_impression(){
      else
       whiptail --msgbox "Pas de file d'impression" 0 0
    fi
-}  
-  
+}
+
 function Print(){
   ###
   ### Function it is all about
@@ -148,7 +149,7 @@ function Print(){
       --yesno "Le fichier $printed va être imprimé $CopyNumber fois voulez vous continuer ? " 0 0
       status=$?
       if [ $status -ne 0 ]; then
-	menu 
+	menu
       fi
 
       # $1 est l'argument passé à la fonction Print, on abandone les formats paysage et portrait
@@ -156,9 +157,9 @@ function Print(){
       # echo "lpr $1 -#$CopyNumber $pathselect" >> /home/$USER/impression.txt
       lpr -#$CopyNumber $HOME/doc.ps
       ### After confirmation of lpr script, confirmation message :
-      # Moon Replace by QUOTA=`quota` 
+      # Moon Replace by QUOTA=`quota`
       QUOTA=`quota`
-            
+
     else
       whiptail --title "$TITLE"\
       --msgbox "Attention : \n Vous n'avez pas spécifié de nombre" 0 0
@@ -200,10 +201,10 @@ PdfCheck
     # Les boutons ne passent pas !
     #pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
     #--cancel-button Retour --ok-button Select $filepath 3>&1 1>&2 2>&3)
-    
+
     pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 $filepath 3>&1 1>&2 2>&3)
     type_f=`file $pathselect | cut -d ":" -f2 | cut -c2-4`
-   
+
   ### Now we check the result path :
   status=$?
   if [ $status -eq 0 -a "$type_f" == "PDF" ]; then
@@ -215,11 +216,11 @@ PdfCheck
        Continuer ? oui/non" 0 0
        status=$?
        if [ $status -ne 0 ];then
-       #whiptail --msgbox "status : $status" 0 0 
+       #whiptail --msgbox "status : $status" 0 0
        menu
        fi
     fi
-    
+
     pdftops "$pathselect" $HOME/doc.ps &
     {
         echo 10
@@ -239,8 +240,8 @@ PdfCheck
     AskOptions
   else
     whiptail --title "$TITLE"\
-    --msgbox "Attention : \n Vous n'avez pas selectionné de fichier ou le fichier n'est pas un fichier 
-    pdf valide:\n `file $pathselect`\n Recreez le fichier PDF ou adressez-vous à un tuteur pendant ses 
+    --msgbox "Attention : \n Vous n'avez pas selectionné de fichier ou le fichier n'est pas un fichier
+    pdf valide:\n `file $pathselect`\n Recreez le fichier PDF ou adressez-vous à un tuteur pendant ses
     heures de bureau." 0 0
   fi
 }
@@ -249,7 +250,7 @@ PdfCheck
 function Welcome(){
   ### Welcome :
   imprimante_prete=`lpq | wc -l`
-  
+
   # si > 2 document en file d'impression, si non prête
   #if [ "$imprimante_prete" == "4" ]; then
     whiptail --title "$TITLE"\
@@ -312,13 +313,13 @@ function menu(){
 	menu
 	;;
       5)
-	# marche po il fot etre root, au fait il faut lancer le script avec l'option "&& exit"	
+	# marche po il fot etre root, au fait il faut lancer le script avec l'option "&& exit"
 	#kill -HUP `pgrep -s 0 -o`
-	# logout        
+	# logout
 	clear
         exit 0
-        ### Or logout	
-        ;;	
+        ### Or logout
+        ;;
     esac
   else
     	exit && logout
