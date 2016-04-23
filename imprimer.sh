@@ -3,31 +3,14 @@
 # Author : Lucas Ranc <lucas.ranc@gmail.com>
 
 ### Def some global vars
-# FQ : Rep Fichier quota
-# FQ=/home/moon/commun/quota
 
 TITLE="SIF"
 LPQ=`lpq`
 
-if [ "$USER" == "moon" ]; then
-   FQ=/home/moon/commun/quota
-   ajout=$(tail -1  $FQ/$USER)
-   e=`echo $ajout | cut -d " " -f1`
-   if [ "$e" == ":nouveau" ]; then
-      QUOTA=$(tail -2  $FQ/$USER | head -1 | cut -d: -f4)
-   else
-      QUOTA=$(tail -1  $FQ/$USER | cut -d: -f3-4 | sed "s#:#/#g")
-   fi
-else
-   QUOTA=`quota`
-fi
+QUOTA=`quota`
 
 # LPQ="HP-LaserJet-P4015 est prêt aucune entrée"
 QUOTA_DISQUE=`du -sh ~ | cut -f1`
-
-# SIF
-#QUOTA_IPM=$(`quota`)
-#QUOTA=65/100
 
 function Quota(){
 ### Print quota user :
@@ -58,9 +41,7 @@ function Pdf_Ps_Check(){
   ### Result into $filepath
   ###
 
-  # moon : if inutile le script sera lancé par le systeme au login, pour l'instant non
-
-	cherche=$(find $HOME \( ! -regex '.*/\..*' \) -type f \( -name "*.ps" -o -name "*.pdf" \) | while read i;do taille=$((du -sh "$(dirname "$i")/$(basename "$i")")| cut -f1);echo -e "$i""|""$taille";  done)
+  cherche=$(find $HOME \( ! -regex '.*/\..*' \) -type f \( -name "*.ps" -o -name "*.pdf" \) | while read i;do taille=$((du -sh "$(dirname "$i")/$(basename "$i")")| cut -f1);echo -e "$i""|""$taille";  done)
 
     oldIFS="$IFS"
     IFS=$'|\n'
@@ -204,11 +185,11 @@ Pdf_Ps_Check
        if [ $status -eq 0 ];then
 	test -f doc.pdf && mv doc.pdf doc.pdf.bak
 	optimise.sh -s source.pdf -o doc.pdf & 3>&1 1>&2 2>&3
-
+        # Here you can test others options :
 	# optimize_pdf.sh "$pathselect" & 3>&1 1>&2 2>&3
 	# gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dProcessColorModel=/DeviceGray -dColorConversionStrategy=/Gray -dQUIET -dBATCH -sOutputFile=doc.pdf "$pathselect" & 3>&1 1>&2 2>&3
-       # Keep checking if the process is running. And keep a count.
-
+       
+     # Keep checking if the process is running. And keep a count.
      {    i="0"
         while (true)
         do
@@ -238,10 +219,10 @@ Pdf_Ps_Check
 
   test -f doc.ps && mv doc.ps doc.ps.bak
   pdftops source.pdf $HOME/doc.ps&
+  # not work if $pathselect contains spaces
   # pdftops $pathselect $HOME/doc.ps&
 
-      # Keep checking if the process is running. And keep a count.
-
+     # Keep checking if the process is running. And keep a count.
      {    i="0"
         while (true)
         do
@@ -272,9 +253,11 @@ Pdf_Ps_Check
 
 function Welcome(){
   ### Welcome :
+  # il faut penser à gérer la sortie de la commande lpq
   imprimante_prete=`lpq | wc -l`
 
-  # si > 2 document en file d'impression, si non prête
+  # Il peut etre intressant de tester si une impression bloque la file depuis un certain temps 
+  # Ici on teste juste si la file contient au moins un document
   #if [ "$imprimante_prete" == "4" ]; then
     whiptail --title "$TITLE"\
   --msgbox "Bonjour et bienvenue sur le module d'impression du SIF.\n\n\
@@ -336,6 +319,8 @@ function menu(){
 	;;
       5)
 	# marche po il fot etre root, au fait il faut lancer le script avec l'option "&& exit"
+	# et sur mon portable cela fonctionne : mettre la commande "imprimmer.sh && exit" dans /etc/profile
+	# 
 	#kill -HUP `pgrep -s 0 -o`
 	# logout
 	exit
@@ -344,7 +329,7 @@ function menu(){
     esac
   else
 	IFS=$' \t\n'
-	exit && logout
+	exit
 	#exit 0
   fi
 }
