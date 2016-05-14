@@ -1,20 +1,28 @@
 #!/bin/bash
 # imprimer.sh - User Friendly's menu to print in UPSUD's SIF
-# Author : Lucas Ranc <lucas.ranc@gmail.com>
+# Author's : Mounir Aatif <mounir.aatif@free.fr>, Lucas Ranc <lucas.ranc@gmail.com>
 
 ### Def some global vars
-
+echo "Debut Script"
 TITLE="SIF"
 LPQ=`lpq`
+# On SIF commande quota return quota user like that : 46/100
+# if root "quota user" ask new page credit to add to the current quota user
 
+# SIF
 QUOTA=`quota`
 
-# LPQ="HP-LaserJet-P4015 est prêt aucune entrée"
 QUOTA_DISQUE=`du -sh ~ | cut -f1`
 
+#####################################################
+# FUNCTION QUOTA Retun quota disk an quota print user
+#
+echo "Debut Quota"
 function Quota(){
-### Print quota user :
-# Replace with quota $USER
+### Print quota space and quota print user :
+#
+ 
+QUOTA=`quota`
   whiptail --title "$TITLE"\
   --msgbox "Vous êtes logué sous l'identité $USER, Vous coccupez actuellement : $QUOTA_DISQUE .\n\
     Votre quota impresion est de : $QUOTA\n\n\
@@ -24,32 +32,43 @@ function Quota(){
     Attention vous avez droit à un seul renouvellement de 100 " 0 0
 }
 
+
+#####################################################
+# FUNCTION ETAT_IMPRIMANTE Return printer status
+#
+echo "Debut etat_imprimante" 
 function etat_imprimante(){
   ###
-  ### Check for printer status
+  ### Check and show printer status
   ###
-  ### If ready then continue, else show files queu
+  ### 
   LPQ=$(lpq)
   whiptail --title "$TITLE"\
   --msgbox "Etat de l'imprimante :\n\n $LPQ" 0 0
  }
 
+#####################################################
+# FUNCTION PDF_PS_CHECK Search all pdf and postscript file, igonre hiden
+# and put them in cherche with IFS=$'|\n' and stored in arrawy filepath  
+#
+echo "Debut Pdf_Ps_Check"
 function Pdf_Ps_Check(){
   ###
-  ### Check for pdf files
-  ### Take an arg to change the folder
+  ### Search pdf and postscript files, ignore hidden folders
+  ### 
   ### Result into $filepath
   ###
-
   cherche=$(find $HOME \( ! -regex '.*/\..*' \) -type f \( -name "*.ps" -o -name "*.pdf" \) | while read i;do taille=$((du -sh "$(dirname "$i")/$(basename "$i")")| cut -f1);echo -e "$i""|""$taille";  done)
-
     oldIFS="$IFS"
     IFS=$'|\n'
     filepath=($cherche)
     IFS=$' \t\n'
-
 }
 
+#####################################################
+# FUNCTION SUPPR_FILE_IMPRESSION, cancel jobs
+#
+echo "Debut suppr_file_impression"
 function suppr_file_impression(){
   ###
   ### Manage owner print qeu
@@ -67,7 +86,14 @@ function suppr_file_impression(){
   	status=$?
       if [[ "$numero_job" =~ ^[0-9]+$ ]] || [ $numero_job == "-" ]; then
       	#whiptail --msgbox "contenu de numero_job: $numero_job" 0 0
-      	if [ $status = 0 ] && [ ! -z $numero_job ] || [ $numero_job == "-" ]; then
+      	
+	# Not work, lpq return truncated uid
+	# proprietaire=`lpq | grep $numero_job | awk -F " " '{print $2}'`
+	# if [ "$USER" != "$proprietaire" ]; then
+	#	whiptail --msgbox "Ce job ne vous appartien pas" 0 0
+	# fi
+
+        if [ $status = 0 ] && [ ! -z $numero_job ] || [ $numero_job == "-" ]; then
       		num_job=`lprm $numero_job 2>&1`
           	if [ -z "$num_job" ]; then
             		if [ $numero_job == "-" ]; then
@@ -76,19 +102,24 @@ function suppr_file_impression(){
                			whiptail --msgbox "Le job $numero_job a bien été annulé" 0 0
             		fi
           	else
-            		whiptail --msgbox "La tache $numero_job n'existe pas ou à déjà été annulée" 0 0
+            		whiptail --msgbox "La tache $numero_job n'existe, ne vous appartient pas ou à déjà été annulée" 0 0
           	fi
         else
-            whiptail --msgbox "Le numéro entré n'est pas bon" 0 0
+            whiptail --msgbox "Le numéro entré ne correspond pas à un numéro de tache, vérifier la file" 0 0
         fi
       else
-        whiptail --msgbox "Uniquement des chiffres, repérez le numéro du job !" 0 0
+        whiptail --msgbox "Uniquement des chiffres, repérez le numéro du job dans la file !" 0 0
       fi
      else
       whiptail --msgbox "Pas de file d'impression" 0 0
    fi
 }
 
+#############################################################################
+# FUNCTION PRINT Ask how copy's to print "CopyNumber" if postscript copy them
+# in doc.ps and send to print 
+#
+echo "Debut print" 
 function Print(){
   ###
   ### Function it is all about
@@ -98,7 +129,6 @@ function Print(){
       "Combien de fois voulez-vous l'imprimer ?\n\
       (Par défaut : 1)" 0 0 1 3>&1 1>&2 2>&3)
   status=$?
-
   if [ $status = 0 ]; then
     if [[ "$CopyNumber" =~ ^[0-9]+$ ]]; then
       ### Here, every params is ok to send print command :
@@ -110,19 +140,13 @@ function Print(){
       if [ $status -ne 0 ]; then
 	menu
       fi
-
-      # $1 est l'argument passé à la fonction Print
-      # echo "lpr $1 -#$CopyNumber $pathselect" >> /home/$USER/impression.txt
-      if [ "$type_f" == "PostScript" ]; then
-	mv "$pathselect" $HOME/doc.ps
-      elif [ "$type_f" == "PDF" ]; then
-	echo
-      fi
-      lpr -#$CopyNumber $HOME/doc.ps
-      ### After confirmation of lpr script, confirmation message :
-      # Moon Replace by QUOTA=`quota`
-      # QUOTA=`quota`
-
+      
+      whiptail --msgbox "Impression envoyée" 0 0
+      
+      # For custom scrip lpr in SIF replace by this :
+      # echo "o" | lpr -U $USER -#$CopyNumber $HOME/doc.ps
+      lpr -U $USER -#$CopyNumber $HOME/doc.ps
+      menu
     else
       whiptail --title "$TITLE"\
       --msgbox "Attention : \n Vous n'avez pas spécifié de nombre" 0 0
@@ -132,13 +156,16 @@ function Print(){
   fi
 }
 
+#############################################################################
+# FUNCTION ASKOPTIONS Ask print options before printing 
+#
+echo "Debut AskOptions"
 function AskOptions(){
   choice=$(whiptail --title "$TITLE" --menu "Choisir une option" 0 0 0 \
-  "1" "Imprimer eco responsable en recto-verso ?" \
+  "1" "Imprimer en recto-verso ?" \
   "2" "Imprimer recto ?" \
   "3" "Retour au menu" 3>&1 1>&2 2>&3)
   status=$?
-
   if [ $status -eq 0 ]; then
     case $choice in
       1 )
@@ -156,76 +183,161 @@ function AskOptions(){
   fi
 }
 
+#############################################################################
+# FUNCTION PROCEDURE Test file type selected, and proced to optimization if necessary 
+# then convert to postscript fo print
+echo "Debut Procedure"
 
 function Procedure(){
-  ###
-  ### Launch precedure to print : find files, ask options, print
-  ###
- # moon
-Pdf_Ps_Check
-  ### Ask which file to use
-
-   pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
+  
+  
+  # Search pdf and ps files
+  echo "Vers Pdf_Ps_Chek"
+  Pdf_Ps_Check
+  
+  ### Ask which file to use and stored in $pathselect
+  pathselect=$(whiptail --menu "Selectionnez un fichier à imprimer" 0 0 0 \
     --cancel-button Retour --ok-button Select "${filepath[@]}" 3>&1 1>&2 2>&3)
-   status=$?
-   #file `echo $pathselect` | grep postScript  && whiptail --msgbox "Vous avez selectionné un fichier PS" 0 0
-  #file `echo $pathselect` | grep PDF && whiptail --msgbox "Vous avez selectionné un fichier PDF $pathselect" 0 0
-   cp "$pathselect" source.pdf
-   type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2`
-   taille=`du "$pathselect" | awk -F " " '{print $1}'`
-  #whiptail --msgbox "type_f: $type_f" 0 0
+  status=$?
+ 
+  # If cancel-button then return to menu
+  if [ $status -ne 0 ]; then
+   menu
+  fi  
 
-### Now we check the result path :
+  # Determine type file PDF or PostScript, and size
+  type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2` 
+  taille=`du "$pathselect" | awk -F " " '{print $1}'`
 
+  #Case PDF
   if [ "$type_f" == "PDF" ]; then
 
-    if [ $taille -gt "10000" ]; then
-       whiptail --yesno "Attention le fichier: $pathselect occupe : $taille Kiloctets, l'impression risque d'être lente, si vous le souhaitez nous allons de tenter de le reduire, si toute fois le resultat obtenu n'est pas satifaisant, repondez non pour l'imprimer tel quel" 0 0
-       status=$?
-       if [ $status -eq 0 ];then
-	test -f doc.pdf && mv doc.pdf doc.pdf.bak
-	optimise.sh -s source.pdf -o doc.pdf & 3>&1 1>&2 2>&3
-        # Here you can test others options :
-	# optimize_pdf.sh "$pathselect" & 3>&1 1>&2 2>&3
-	# gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dProcessColorModel=/DeviceGray -dColorConversionStrategy=/Gray -dQUIET -dBATCH -sOutputFile=doc.pdf "$pathselect" & 3>&1 1>&2 2>&3
-       
-     # Keep checking if the process is running. And keep a count.
-     {    i="0"
-        while (true)
-        do
-             proc=$(ps aux | grep -v grep | grep pdfwrite)
-	     #proc=$(ps aux | grep -v grep | grep setpdfwrite)
-	     #proc=$(ps aux | grep -v grep | grep "gs" | grep "sDEVICE")
-            if [ "$proc" == "" ]; then break; fi
-            # Sleep for a longer period if the database is really big
-            # as dumping will take longer.
-            sleep 1
-            echo $i
-            i=$(expr $i + 1)
-        done
-        # If it is done then display 100%
-        echo 100
-        # Give it some time to display the progress to the user.
-        sleep 2
-     } | whiptail --title "Optimisation" --gauge "Merci de patienter, Optimisation de $pathselect en cours... " 0 0 0
-       whiptail --yesno "Taille de $pathselect : $taille, Octets, Taille reduite : `du doc.pdf | awk '{print $1}'` Octets, Voulez vous imprimer ?;" 0 0
+      # Prudently we copy the file in source.pdf to eliminate special caracteres ans spaces  
+      # the commande pdfinfo not accept files with spaces
+      test -f source.pdf && mv source.pdf source.pdf.bak
+      cp "$pathselect" source.pdf
+      
+      # Determine numbers of pages in  the document
+      pages=`pdfinfo source.pdf | grep Pages | awk -F " " '{print $2}'`
+      
+      # ( at this step we can test quota user to compare and tel them if $pages grant to quota )
+      # Confirm to print all pages
+      whiptail --yesno "Vous allez imprimer: $pages pages" 0 0
       status=$?
-      if [ $status -ne 0 ]; then
-	menu
+      
+      # If no return to menu 
+      if [ $status -ne 0 ];then
+         menu
       fi
-    fi
+      
+      # If size grant to 10 Mo, we ask for optimization, Warning : require optimise.sh script
+      if [ $taille -gt "10000" ]; then
+         whiptail --yesno "Attention le fichier: $pathselect occupe : $taille Kiloctets, l'impression risque d'être lente, si vous le souhaitez nous allons de tenter de le reduire, si toute fois le resultat obtenu n'est pas satifaisant, repondez non pour l'imprimer tel quel" 0 0
+      status=$?
+         # If yes, then go optimise 
+         if [ $status -eq 0 ];then
+         optimise   
+         # Test if file is optimized
+            taille_source=$(du -h source.pdf | awk -F " " '{print $1}' | sed "s/.$//")
+	    taille_doc=$(du -h doc.pdf | awk -F " " '{print $1}' | sed "s/.$//")
+            if [ "$taille_doc" -lt "$taille_source" ]; then
+		cp doc.pdf source.pdf
+	    fi
+
+         whiptail --yesno "Taille de $pathselect : $taille, Octets, Taille reduite : `du doc.pdf | awk '{print $1}'` Octets, Voulez vous imprimer ?;" 0 0
+      
+            # If no return menu
+            status=$?
+              if [ $status -ne 0 ]; then
+	       menu
+              fi
+
+           # Send to convert ps and printing 
+	   conversion
+        # End optimize
+        fi
+     
+     # End if $taille -gt 10 Mo 
+     fi     
+     conversion
+  # End PDF file
+  fi
+
+  # Case postScript
+  if [ "$type_f" == "PostScript" ]; then
+
+      # Eliminate spaces and special car, custom lpr script don't accept them
+      test -f doc.ps && mv doc.ps doc.ps.bak
+      cp "$pathselect" /$HOME/doc.ps
+
+      # Calculate pages
+      # nb = nb occurences of Pages ps
+      nb=`grep Pages doc.ps | awk -F " " '{print $2}' | wc -l`
+      if [ $nb -gt 1 ]; then
+	pages=`grep Pages doc.ps | awk -F " " '{print $2}' | tail -1`
+      else
+	pages=`grep Pages doc.ps | awk -F " " '{print $2}'`
+      fi
+      #  at this point we can test quota user to compare and tel them if $pages grant to quota
+      
+      # If no, return to menu
+      whiptail --yesno "Vous allez imprimer: $pages pages" 0 0
+      status=$?
+      if [ $status -ne 0 ];then
+         menu
+      fi
+
+      # Ask for print
+      AskOptions
+  
+  # No files selected, or other... 
+  else
+      whiptail --title "$TITLE" --msgbox "Attention : \n Seul des pdf ou des ps peuvent être imprimés :\nfichier : $pathselect \n Type : `file $pathselect`\n Recreez le fichier PDF ou adressez-vous à un tuteur pendant ses heures de bureau." 0 0
 
   fi
 
-  test -f doc.ps && mv doc.ps doc.ps.bak
-  pdftops source.pdf $HOME/doc.ps&
-  # not work if $pathselect contains spaces
-  # pdftops $pathselect $HOME/doc.ps&
+}
 
-     # Keep checking if the process is running. And keep a count.
-     {    i="0"
-        while (true)
-        do
+echo "Debut optimise"
+#############################################################################
+# FUNCTION optimise, use script optimise.sh very slow if pdf contain vectorized images
+function optimise(){
+	    test -f doc.pdf && mv doc.pdf doc.pdf.bak
+            optimise.sh -s source.pdf -o doc.pdf & 3>&1 1>&2 2>&3
+            
+            # Keep checking if the process is running. And keep a count.
+            {    i="0"
+            while (true)
+            do
+                
+		proc=$(ps aux | grep -v grep | grep "/usr/bin/gs" | awk '{print $1}')
+		if [ "$proc" == "" ]; then break; fi
+		# Sleep for a longer period if the database is really big
+		# as dumping will take longer.
+		sleep 1
+		echo $i
+		i=$(expr $i + 1)
+            done
+            # If it is done then display 100%
+            echo 100
+            # Give it some time to display the progress to the user.
+            sleep 2
+	     } | whiptail --title "Optimisation" --gauge "Merci de patienter, Optimisation de $pathselect en cours... " 0 0 0
+}
+
+
+echo "Debut conversion"
+#############################################################################
+# FUNCTION CONVERSION Convert source.pdf to doc.ps (needed by custom lpr script)
+function conversion(){
+     
+      # whiptail --title "$TITLE" --msgbox "Impression directe...de $pathselect" 0 0
+      pdftops source.pdf $HOME/doc.ps & 3>&1 1>&2 2>&3
+
+      # Keep checking if the process is running. And keep a count.
+      {    i="0"
+      while (true)
+      do
             proc=$(ps aux | grep -v grep | grep -e "pdftops")
             if [[ "$proc" == "" ]]; then break; fi
             # Sleep for a longer period if the database is really big
@@ -233,29 +345,23 @@ Pdf_Ps_Check
             sleep 1
             echo $i
             i=$(expr $i + 1)
-        done
-        # If it is done then display 100%
-        echo 100
-        # Give it some time to display the progress to the user.
-        sleep 2
-     } | whiptail --title "$TITLE" --gauge "Patientez conversion de $pathselect en cours ...selon la taille du fichier" 0 0 0
-    AskOptions
-  elif [ $status -eq 0 -a "$type_f" == "PostScript" ]; then
-    AskOptions
-  else
-    whiptail --title "$TITLE"\
-    --msgbox "Attention : \n Vous n'avez pas selectionné de fichier ou le fichier n'est pas un fichier
-    pdf valide:\n `file $pathselect`\n Recreez le fichier PDF ou adressez-vous à un tuteur pendant ses
-    heures de bureau." 0 0
-  fi
+      done
+      # If it is done then display 100%
+      echo 100
+      # Give it some time to display the progress to the user.
+      sleep 2
+      } | whiptail --title "$TITLE" --gauge "Patientez conversion de $pathselect en cours ...selon la taille du fichier" 0 0 0
+
+      # Ask for print
+      AskOptions
 }
 
-
+echo "Debut Welcom"
 function Welcome(){
+
   ### Welcome :
   # il faut penser à gérer la sortie de la commande lpq
   imprimante_prete=`lpq | wc -l`
-
   # Il peut etre intressant de tester si une impression bloque la file depuis un certain temps 
   # Ici on teste juste si la file contient au moins un document
   #if [ "$imprimante_prete" == "4" ]; then
@@ -288,7 +394,9 @@ function Welcome(){
  # fi
 }
 
+echo "Debut menu"
 function menu(){
+  
   ### Menu
   choice=$(whiptail --title "$TITLE" --menu "Votre quota impression: $QUOTA Pages\nVous occupez $QUOTA_DISQUE\nQue voulez vous faire ? " 0 0 0 \
   "1" "Afficher l'état de l'imprimante" \
@@ -298,7 +406,6 @@ function menu(){
   "5" "Quiter" 3>&1 1>&2 2>&3)
 # "Refresh" "Actualiser la liste des fichiers" \
   status=$?
-
   if [ $status -eq 0 ]; then
     case $choice in
       1 )
@@ -333,10 +440,7 @@ function menu(){
 	#exit 0
   fi
 }
-
-
 ### Launch welcoming and menu
 Welcome
 menu
-
 exit 0
