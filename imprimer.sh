@@ -1,6 +1,6 @@
 #!/bin/bash
 # imprimer.sh - User Friendly's menu to print in UPSUD's SIF
-# Author's : Mounir Aatif <mounir.aatif@free.fr>, Lucas Ranc <lucas.ranc@gmail.com>
+# Author : Lucas Ranc <lucas.ranc@gmail.com>, Mounir Aatif <mounir.aatif@free.fr>
 
 ### Def some global vars
 echo "Debut Script"
@@ -8,6 +8,13 @@ TITLE="SIF"
 LPQ=`lpq`
 # On SIF commande quota return quota user like that : 46/100
 # if root "quota user" ask new page credit to add to the current quota user
+# On my laptop I créate srcipt quota  
+# QUOTA=$(tail -1 /commun/quota/$USER | awk -F":" '{print $3}')
+# QUOTA=$(echo $ancien_quota | tr -d "\t")
+
+# Save olds files
+  test -f source.pdf && mv source.pdf source.pdf.bak
+#  test -f doc.ps && mv doc.ps doc.ps.bak
 
 # SIF
 QUOTA=`quota`
@@ -192,7 +199,6 @@ function Procedure(){
   
   
   # Search pdf and ps files
-  echo "Vers Pdf_Ps_Chek"
   Pdf_Ps_Check
   
   ### Ask which file to use and stored in $pathselect
@@ -204,7 +210,10 @@ function Procedure(){
   if [ $status -ne 0 ]; then
    menu
   fi  
-
+  
+  # Replace space by "_" in pathselect, to shell commands
+  mv "$pathselect" "${pathselect// /_}"
+  pathselect="${pathselect// /_}"
   # Determine type file PDF or PostScript, and size
   type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2` 
   taille=`du "$pathselect" | awk -F " " '{print $1}'`
@@ -214,9 +223,7 @@ function Procedure(){
 
       # Prudently we copy the file in source.pdf to eliminate special caracteres ans spaces  
       # the commande pdfinfo not accept files with spaces
-      test -f source.pdf && mv source.pdf source.pdf.bak
-      cp "$pathselect" source.pdf
-      
+      cp -f $pathselect $HOME/source.pdf
       # Determine numbers of pages in  the document
       pages=`pdfinfo source.pdf | grep Pages | awk -F " " '{print $2}'`
       
@@ -230,19 +237,20 @@ function Procedure(){
          menu
       fi
       
-      # If size grant to 10 Mo, we ask for optimization, Warning : require optimise.sh script
-      if [ $taille -gt "10000" ]; then
+      # If size grant to 40 Mo, we ask for optimization, Warning : require optimise.sh script
+      if [ $taille -gt "40000" ]; then
          whiptail --yesno "Attention le fichier: $pathselect occupe : $taille Kiloctets, l'impression risque d'être lente, si vous le souhaitez nous allons de tenter de le reduire, si toute fois le resultat obtenu n'est pas satifaisant, repondez non pour l'imprimer tel quel" 0 0
       status=$?
          # If yes, then go optimise 
          if [ $status -eq 0 ];then
-         optimise   
-         # Test if file is optimized
-            taille_source=$(du -h source.pdf | awk -F " " '{print $1}' | sed "s/.$//")
-	    taille_doc=$(du -h doc.pdf | awk -F " " '{print $1}' | sed "s/.$//")
-            if [ "$taille_doc" -lt "$taille_source" ]; then
+            optimise
+	    # if optimized copy in source.pdf (only source.pdf is printed)
+            taille_source=$(du source.pdf | awk -F " " '{print $1}')
+	    taille_doc=$(du doc.pdf | awk -F " " '{print $1}')
+            
+	      if [ "$taille_doc" -lt "$taille_source" ]; then
 		cp doc.pdf source.pdf
-	    fi
+	     fi
 
          whiptail --yesno "Taille de $pathselect : $taille, Octets, Taille reduite : `du doc.pdf | awk '{print $1}'` Octets, Voulez vous imprimer ?;" 0 0
       
@@ -304,25 +312,25 @@ echo "Debut optimise"
 function optimise(){
 	    test -f doc.pdf && mv doc.pdf doc.pdf.bak
             optimise.sh -s source.pdf -o doc.pdf & 3>&1 1>&2 2>&3
-            
+	    proc=$(ps aux | grep -v grep | grep "/usr/bin/gs" | awk '{print $1}')
             # Keep checking if the process is running. And keep a count.
             {    i="0"
-            while (true)
+            while [ true ]
             do
-                
-		proc=$(ps aux | grep -v grep | grep "/usr/bin/gs" | awk '{print $1}')
-		if [ "$proc" == "" ]; then break; fi
-		# Sleep for a longer period if the database is really big
-		# as dumping will take longer.
+                # Warning conflicts with lp qeu, then grep $USER
+		# Sleep for a longer period if the pdf is really big
 		sleep 1
 		echo $i
 		i=$(expr $i + 1)
-            done
+		proc=$(ps aux | grep -v grep | grep "/usr/bin/gs" | awk '{print $1}' | grep $USER)
+		if [ "$proc" == "" ]; then break; fi
+		
+	    done
             # If it is done then display 100%
             echo 100
             # Give it some time to display the progress to the user.
             sleep 2
-	     } | whiptail --title "Optimisation" --gauge "Merci de patienter, Optimisation de $pathselect en cours... " 0 0 0
+	    } | whiptail --title "Optimisation" --gauge "Merci de patienter, Optimisation de $pathselect en cours... " 0 0 0
 }
 
 
