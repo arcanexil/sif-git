@@ -212,7 +212,7 @@ function Procedure(){
   fi  
   
   # Replace space by "_" in pathselect, to shell commands
-  mv "$pathselect" "${pathselect// /_}"
+  [[ "$pathselect" =~ " " ]] && cp "$pathselect" "${pathselect// /_}"
   pathselect="${pathselect// /_}"
   # Determine type file PDF or PostScript, and size
   type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2` 
@@ -275,7 +275,7 @@ function Procedure(){
   if [ "$type_f" == "PostScript" ]; then
 
       # Eliminate spaces and special car, custom lpr script don't accept them
-      test -f doc.ps && mv doc.ps doc.ps.bak
+      test -f doc.ps && cp doc.ps doc.ps.bak
       cp "$pathselect" /$HOME/doc.ps
 
       # Calculate pages
