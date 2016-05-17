@@ -212,8 +212,7 @@ function Procedure(){
   fi  
   
   # Replace space by "_" in pathselect, to shell commands
-  [[ "$pathselect" =~ " " ]] && cp "$pathselect" "${pathselect// /_}"
-  pathselect="${pathselect// /_}"
+  [[ "$pathselect" =~ " " ]] && cp "$pathselect" "${pathselect// /_}" && pathselect="${pathselect// /_}"
   # Determine type file PDF or PostScript, and size
   type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2` 
   taille=`du "$pathselect" | awk -F " " '{print $1}'`
