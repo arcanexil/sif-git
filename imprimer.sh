@@ -1,6 +1,14 @@
 #!/bin/bash
 # imprimer.sh - User Friendly's menu to print in UPSUD's SIF
 # Author : Lucas Ranc <lucas.ranc@gmail.com>, Mounir Aatif <mounir.aatif@free.fr>
+# ------------------------------------
+# Add function eps2ps, convert eps to ps ( todo remove standard ouput)
+# Replace files with space by "_" caracter ok
+#  
+#--------------------------
+# Remove source.pdf use only $pathselect and rename output.ps outpout.ps ok
+# telling the user if the file contain spaces we replaced by "_" car ok
+#
 
 ### Def some global vars
 echo "Debut Script"
@@ -12,9 +20,8 @@ LPQ=`lpq`
 # QUOTA=$(tail -1 /commun/quota/$USER | awk -F":" '{print $3}')
 # QUOTA=$(echo $ancien_quota | tr -d "\t")
 
-# Save olds files
-  test -f source.pdf && mv source.pdf source.pdf.bak
-#  test -f doc.ps && mv doc.ps doc.ps.bak
+# Save old file
+# 
 
 # SIF
 QUOTA=`quota`
@@ -109,7 +116,7 @@ function suppr_file_impression(){
                			whiptail --msgbox "Le job $numero_job a bien été annulé" 0 0
             		fi
           	else
-            		whiptail --msgbox "La tache $numero_job n'existe, ne vous appartient pas ou à déjà été annulée" 0 0
+            		whiptail --msgbox "La tache $numero_job n'existe pas, ne vous appartient pas ou à déjà été annulée" 0 0
           	fi
         else
             whiptail --msgbox "Le numéro entré ne correspond pas à un numéro de tache, vérifier la file" 0 0
@@ -124,7 +131,7 @@ function suppr_file_impression(){
 
 #############################################################################
 # FUNCTION PRINT Ask how copy's to print "CopyNumber" if postscript copy them
-# in doc.ps and send to print 
+# in output.ps and send to print 
 #
 echo "Debut print" 
 function Print(){
@@ -151,8 +158,8 @@ function Print(){
       whiptail --msgbox "Impression envoyée" 0 0
       
       # For custom scrip lpr in SIF replace by this :
-      # echo "o" | lpr -U $USER -#$CopyNumber $HOME/doc.ps
-      lpr -U $USER -#$CopyNumber $HOME/doc.ps
+      # echo "o" | lpr -U $USER -#$CopyNumber $HOME/output.ps
+      lpr -U $USER -#$CopyNumber $HOME/output.ps
       menu
     else
       whiptail --title "$TITLE"\
@@ -212,19 +219,20 @@ function Procedure(){
   fi  
   
   # Replace space by "_" in pathselect, to shell commands
-  [[ "$pathselect" =~ " " ]] && cp "$pathselect" "${pathselect// /_}" && pathselect="${pathselect// /_}"
+  [[ "$pathselect" =~ " " ]] && mv "$pathselect" "${pathselect// /_}" && pathselect="${pathselect// /_}" \
+  && whiptail --title "$TITLE" --msgbox "Votre fichier: `basename $pathselect` contenait des espaces ils ont étés remplacés par des "_" " 0 0
   # Determine type file PDF or PostScript, and size
   type_f=`file "$pathselect" | cut -d: -f2 | cut -d" " -f2` 
-  taille=`du "$pathselect" | awk -F " " '{print $1}'`
+  taille_source=`du "$pathselect" | awk -F " " '{print $1}'`
 
   #Case PDF
   if [ "$type_f" == "PDF" ]; then
-
+      whiptail --title "$TITLE" --msgbox "PDF : $type_f" 0 0
       # Prudently we copy the file in source.pdf to eliminate special caracteres ans spaces  
       # the commande pdfinfo not accept files with spaces
-      cp -f $pathselect $HOME/source.pdf
+      # cp -f $pathselect $HOME/source.pdf
       # Determine numbers of pages in  the document
-      pages=`pdfinfo source.pdf | grep Pages | awk -F " " '{print $2}'`
+      pages=`pdfinfo $pathselect | grep Pages | awk -F " " '{print $2}'`
       
       # ( at this step we can test quota user to compare and tel them if $pages grant to quota )
       # Confirm to print all pages
@@ -237,15 +245,14 @@ function Procedure(){
       fi
       
       # If size grant to 40 Mo, we ask for optimization, Warning : require optimise.sh script
-      if [ $taille -gt "40000" ]; then
-         whiptail --yesno "Attention le fichier: $pathselect occupe : $taille Kiloctets, l'impression risque d'être lente, si vous le souhaitez nous allons de tenter de le reduire, si toute fois le resultat obtenu n'est pas satifaisant, repondez non pour l'imprimer tel quel" 0 0
+      if [ $taille_source -gt "40000" ]; then
+         whiptail --yesno "Attention le fichier: $pathselect occupe : $taille_source Kiloctets, l'impression risque d'être lente, si vous le souhaitez nous allons de tenter de le reduire, si toute fois le resultat obtenu n'est pas satifaisant, repondez non pour l'imprimer tel quel" 0 0
       status=$?
          # If yes, then go optimise 
          if [ $status -eq 0 ];then
             optimise
 	    # if optimized copy in source.pdf (only source.pdf is printed)
-            taille_source=$(du source.pdf | awk -F " " '{print $1}')
-	    taille_doc=$(du doc.pdf | awk -F " " '{print $1}')
+            taille_doc=$(du doc.pdf | awk -F " " '{print $1}')
             
 	      if [ "$taille_doc" -lt "$taille_source" ]; then
 		cp doc.pdf source.pdf
@@ -273,30 +280,38 @@ function Procedure(){
   # Case postScript
   if [ "$type_f" == "PostScript" ]; then
 
+      whiptail --title "$TITLE" --msgbox "PostScrip : $type_f" 0 0
       # Eliminate spaces and special car, custom lpr script don't accept them
-      test -f doc.ps && cp doc.ps doc.ps.bak
-      cp "$pathselect" /$HOME/doc.ps
+      #test -f output.ps && cp output.ps output.ps.bak
+      #cp "$pathselect" /$HOME/output.ps
 
       # Calculate pages
       # nb = nb occurences of Pages ps
-      nb=`grep Pages doc.ps | awk -F " " '{print $2}' | wc -l`
+      nb=`grep Pages $pathselect | awk -F " " '{print $2}' | wc -l`
       if [ $nb -gt 1 ]; then
-	pages=`grep Pages doc.ps | awk -F " " '{print $2}' | tail -1`
+	pages=`grep Pages $pathselect | awk -F " " '{print $2}' | tail -1`
       else
-	pages=`grep Pages doc.ps | awk -F " " '{print $2}'`
+	pages=`grep Pages $pathselect | awk -F " " '{print $2}'`
       fi
       #  at this point we can test quota user to compare and tel them if $pages grant to quota
       
-      # If no, return to menu
       whiptail --yesno "Vous allez imprimer: $pages pages" 0 0
       status=$?
+      # If no, return to menu, else AskOption for print
       if [ $status -ne 0 ];then
          menu
       fi
 
       # Ask for print
       AskOptions
-  
+  elif [ "$type_f" == "PJL" ]; then
+      whiptail --title "$TITLE" --yesno "Fichier PS Encapsulé : $type_f, voulez vous le convertir pour impression ?" 0 0
+      status=$?
+      # If no, return to menu, else function epstops
+      if [ $status -ne 0 ];then
+         menu
+      fi
+      eps2ps
   # No files selected, or other... 
   else
       whiptail --title "$TITLE" --msgbox "Attention : \n Seul des pdf ou des ps peuvent être imprimés :\nfichier : $pathselect \n Type : `file $pathselect`\n Recreez le fichier PDF ou adressez-vous à un tuteur pendant ses heures de bureau." 0 0
@@ -309,8 +324,7 @@ echo "Debut optimise"
 #############################################################################
 # FUNCTION optimise, use script optimise.sh very slow if pdf contain vectorized images
 function optimise(){
-	    test -f doc.pdf && mv doc.pdf doc.pdf.bak
-            optimise.sh -s source.pdf -o doc.pdf & 3>&1 1>&2 2>&3
+	    optimise.sh -s $pathselect -o doc.pdf & 3>&1 1>&2 2>&3
 	    proc=$(ps aux | grep -v grep | grep "/usr/bin/gs" | awk '{print $1}')
             # Keep checking if the process is running. And keep a count.
             {    i="0"
@@ -335,11 +349,11 @@ function optimise(){
 
 echo "Debut conversion"
 #############################################################################
-# FUNCTION CONVERSION Convert source.pdf to doc.ps (needed by custom lpr script)
+# FUNCTION CONVERSION Convert source.pdf to output.ps (needed by custom lpr script)
 function conversion(){
      
       # whiptail --title "$TITLE" --msgbox "Impression directe...de $pathselect" 0 0
-      pdftops source.pdf $HOME/doc.ps & 3>&1 1>&2 2>&3
+      pdftops $pathselect $HOME/output.ps & 3>&1 1>&2 2>&3
 
       # Keep checking if the process is running. And keep a count.
       {    i="0"
@@ -358,6 +372,33 @@ function conversion(){
       # Give it some time to display the progress to the user.
       sleep 2
       } | whiptail --title "$TITLE" --gauge "Patientez conversion de $pathselect en cours ...selon la taille du fichier" 0 0 0
+
+      # Ask for print
+      AskOptions
+}
+
+#################################################"
+# FUNCTION PS2PS, convert to ps if encapsuled ps
+function eps2ps(){
+
+ps2ps -sstdout=%stderr $pathselect $HOME/output.ps& 2>/dev/null
+# Keep checking if the process is running. And keep a count.
+      {    i="0"
+      while (true)
+      do
+            proc=$(ps aux | grep -v grep | grep -e "/usr/bin/gs" | awk '{print $1}')
+            if [[ "$proc" == "" ]]; then break; fi
+            # Sleep for a longer period if the database is really big
+            # as dumping will take longer.
+            sleep 1
+            echo $i
+            i=$(expr $i + 1)
+      done
+      # If it is done then display 100%
+      echo 100
+      # Give it some time to display the progress to the user.
+      sleep 2
+      } | whiptail --title "$TITLE" --gauge "Patientez conversion de $pathselect qui est un fichier PostScript Encapsulé en cours ...selon la taille du fichier" 0 0 0
 
       # Ask for print
       AskOptions
