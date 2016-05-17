@@ -7,24 +7,19 @@ Legend :
 - [ ] Nouvelle Procedure (@dev)
   - [ ] renommage des fichiers avec espaces
       - [x] avec mv (-> d962d0f)
-      - [ ] avec ifs
+      - [x] avec ifs
       - [ ] caractères spéciaux?
-  - [ ] Solution de conversion pdf > 2 Mo
-      - [ ] retour de la fonction PS
+  - [ ] Solution de conversion pdf > 40 Mo
+      - [x] retour de la fonction PS
       - [ ] passage au tout PDF avec pdfinfo
   - [ ] Utilisation d'un demon
       - [ ] reverse engineering de LPR
 
 A faire :
- 1. Gérer les nom de fichiers avec des espaces, il y en a...
-    En fait le while recupere bien le fichier avec espaces c'est whiptail qui
-    le recupere emal !
+ 1. Fait, si fichier avec espaces alors rempalcer par '_' et prévenir l'utilisateur
 
- 2. Trouver un solution pour la conversion des fichiers pdf > à 2 Mo car c'est
-    lent. On peut envisager si le PDF est gros, dans un premier temps de proposer
-     à l'utilisateur la première methode :-(
-    Pas genial mais bon ... Et donc de remettre la fonction PsCheck que j'avais
-      supprimé
+ 2. Les fichiers PDF supérieur à 40 Mo, si non cela ne vaut pas la peine (double attente pour l'utilisateur)
+ 
 
 --------------------------------------------------------------------------------
 - [x] Procedure normale (@master) (-> v0.0.1)
