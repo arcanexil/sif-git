@@ -503,7 +503,8 @@ function Welcome(){
   lpq 2>/dev/null
   
   if [ $? = 1 ]; then
-	whiptail --title "$TITLE" --msgbox "Imprimante non prête, le service CUPS est il lancé?" 0 0
+	whiptail --title "$TITLE" --msgbox "Imprimante non prête, le service CUPS est il lancé?\n\
+	y a il une imprimante declarée par défaut ?" 0 0
 	exit
   fi
 
@@ -553,13 +554,12 @@ function Menu(){
   "2" "Imprimer (PDF ou PS)" \
   "3" "Annuler les impressions envoyées" \
   "4" "Afficher le quota d'impression et l'espace disque occupé" \
-  "5" "Quiter" 3>&1 1>&2 2>&3)
-# "Refresh" "Actualiser la liste des fichiers" \
+  "5" "Rafraichir l'état de la file d'impression" \
+  "6" "Quiter" 3>&1 1>&2 2>&3)
   status=$?
   if [ $status -eq 0 ]; then
     case $choice in
       1 )
-        #Etat_imprimante
         Aide
         Menu
         ;;
@@ -576,6 +576,9 @@ function Menu(){
 	Menu
 	;;
       5)
+        Menu
+	;;
+      6)
 	whiptail --title "$TITLE" --msgbox "N'oubliez pas de vous deconnecter en tapant exit ou Ctrl+d\n\n\
         A bientôt..." 0 0
 	clear
