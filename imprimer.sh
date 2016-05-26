@@ -16,7 +16,7 @@ cd $HOME
 TITLE="SIF"
 LPQ=`lpq`
 
-# 
+# Pour info 
 # DP="-o sides=two-sided-short-edge" # paysage
 # DL="-o sides=two-sided-long-edge"  # portrait
 
@@ -233,23 +233,19 @@ function AskOptions(){
 
   # echo "Entre dans AskOptions"
   choice=$(whiptail --title "$TITLE" --menu "Choisir une option" 0 0 0 \
-  "1" "Imprimer en recto-verso Portrait ?" \
-  "2" "Imprimer en recto-verso Paysage ?" \
-  "3" "Imprimer recto ?" \
-  "4" "Retour au menu" 3>&1 1>&2 2>&3)
+  "1" "Imprimer recto ?" \
+  "2" "Imprimer en recto-verso ?" \
+  "3" "Retour au menu" 3>&1 1>&2 2>&3)
   status=$?
   if [ $status -eq 0 ]; then
     case $choice in
       1 )
-      Print $DL
-      ;;
-      2 )
-      Print $DP
-      ;;
-      3 )
       Print
       ;;
-      4 )
+      2 )
+      Print -DP
+      ;;
+      3 )
       Menu
       ;;
     esac
@@ -595,4 +591,3 @@ function Menu(){
 Welcome
 Menu
 exit 0
-
