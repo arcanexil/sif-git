@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ $# -ne 1 ] ;then
+   echo syntaxe: txt2unix fichier.txt
+   echo
+   echo convertit un fichier dos en format unix   
+   echo soit: cat fichier.txt | txt-entree-std-2unix
+   exit 1
+else
+  cat $1 | txt-entree-std-2unix
+fi

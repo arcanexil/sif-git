@@ -1,0 +1,28 @@
+#!/bin/bash
+usage="syntaxe $0 nom_de_file"
+
+C="cp -ax"	# cp_add_ext_date ou mv_add_ext_date
+CLASSE=`basename $0`
+[ $CLASSE = "mv_add_ext_date" ] && C=mv
+
+if [ $# -ne 1 ] ;then
+	echo "$C file file.AAAAMMJJhhmm"
+	echo 'avec la date de file (et non date_ext)' 
+        echo $usage
+        exit 1
+fi
+
+if [ ! -f $1 ] && [ ! -d $1 ] && [ ! -h $1 ] ;then
+	echo $1 inexistant
+	exit 1
+fi
+YYmmdd=`ls -ld --full-time $1 | awk '{print $6}'`
+hhmmss=`ls -ld --full-time $1 | awk '{print $7}'`
+# option  -l pour compatibilite anciennes redhat
+ANNEE=`expr substr $YYmmdd 1 4`
+MOIS=`expr substr $YYmmdd 6 2`
+JOUR=`expr substr $YYmmdd 9 2`
+HEURE=`expr substr $hhmmss 1 2`
+MINUTE=`expr substr $hhmmss 4 2`
+$C $1 $1.$ANNEE$MOIS$JOUR$HEURE$MINUTE
+echo $C $1 $1.$ANNEE$MOIS$JOUR$HEURE$MINUTE

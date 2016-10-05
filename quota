@@ -1,0 +1,24 @@
+#!/bin/bash
+if [ $# -eq 0 ] ;then
+   exec /usr/local/etc/quota.suid
+elif [ $# -eq 1 ] ;then
+
+     U=$(id -u)   
+
+     if [ $U -ne 0 ] ;then
+        echo seul root peut préciser un uid
+        exit 1
+     fi
+
+     id -u $1 >/dev/null 2>&1	
+
+     if [ $? = 0 ] ;then 
+        exec /usr/local/etc/quota.staff $1
+     else
+        echo $1 identifiant inconnu
+     fi
+else
+  echo syntaxe quota [uid]
+  exit 1
+fi
+

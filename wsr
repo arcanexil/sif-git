@@ -1,0 +1,9 @@
+#!/bin/sh
+
+IFS=":"
+
+for P in $PATH
+do
+        [ -x $P/$1 ] && echo $P/$1
+done
+
